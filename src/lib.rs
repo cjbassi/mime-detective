@@ -12,7 +12,7 @@
 
 use magic::{flags, Cookie, MagicError};
 use mime::FromStrError;
-use std::fs::File;
+use std::fs::{File, read_to_string};
 use std::io::{self, Read};
 use std::path::Path;
 use std::{error, fmt};
@@ -27,11 +27,20 @@ impl MimeDetective {
     ///
     /// Requires system to have libmagic installed.
     pub fn new() -> Result<MimeDetective, DetectiveError> {
-        MimeDetective::load_databases(&["/usr/share/misc/magic.mgc"])
+        let mut magic_path = "/usr/share/misc/magic.mgc";
+
+        let distro_file = "/etc/os-release";
+        if Path::new(distro_file).exists() {
+            if read_to_string(distro_file)?.contains("Arch Linux") {
+                magic_path = "/usr/share/file/misc/magic.mgc";
+            }
+        }
+
+        MimeDetective::load_databases(&[magic_path])
     }
 
     /// Initialize detective with magic databases available at the provided path.
-    /// 
+    ///
     /// Requires system to have libmagic installed.
     pub fn load_databases<P: AsRef<Path>>(path: &[P]) -> Result<MimeDetective, DetectiveError> {
         let cookie = Cookie::open(flags::MIME_TYPE)?;
